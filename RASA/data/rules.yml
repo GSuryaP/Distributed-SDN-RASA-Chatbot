@@ -1,0 +1,37 @@
+version: "3.1"
+rules:
+  - rule: show hosts
+    steps:
+      - intent: get_hosts
+      - action: action_get_hosts
+      
+  - rule: block host
+    steps:
+      - intent: block_host
+      - action: action_block_host
+
+  - rule: unblock host
+    steps:
+      - intent: unblock_host
+      - action: action_unblock_host
+
+  - rule: get ports
+    steps:
+      - intent: get_ports
+      - action: action_get_ports
+
+  - rule: get flows
+    steps:
+      - intent: get_flows
+      - action: action_get_flows
+
+  - rule: show topology
+    steps:
+      - intent: show_topology
+      - action: action_show_topology
+
+  - rule: Fallback rule
+    steps:
+      - intent: nlu_fallback
+      - action: action_default_fallback
+

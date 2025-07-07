@@ -1,0 +1,53 @@
+version: "3.1"
+stories:
+
+- story: get connected devices
+  steps:
+    - intent: get_devices
+    - action: action_get_devices
+
+- story: add flow to device
+  steps:
+    - intent: add_flow
+    - action: action_add_flow
+
+- story: check ONOS controller status
+  steps:
+    - intent: check_controllers
+    - action: action_check_controllers
+    
+- story: get hosts
+  steps:
+    - intent: get_hosts
+    - action: action_get_hosts
+
+- story: block a host
+  steps:
+    - intent: block_host
+    - action: action_block_host
+
+- story: unblock a host
+  steps:
+    - intent: unblock_host
+    - action: action_unblock_host
+
+- story: get ports for device
+  steps:
+    - intent: get_ports
+    - action: action_get_ports
+
+- story: get flows for device
+  steps:
+    - intent: get_flows
+    - action: action_get_flows
+
+- story: show network topology
+  steps:
+    - intent: show_topology
+    - action: action_show_topology
+
+- story: fallback case
+  steps:
+    - intent: nlu_fallback
+    - action: action_default_fallback
+
