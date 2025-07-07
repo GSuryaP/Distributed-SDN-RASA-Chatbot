@@ -1,0 +1,76 @@
+version: "3.1"
+nlu:
+
+- intent: get_devices
+  examples: |
+    - show all devices
+    - list devices
+    - what devices are connected
+    - get device list
+    - fetch devices from ONOS
+
+- intent: add_flow
+  examples: |
+    - add a flow from port [1](in_port) to [2](out_port) on device [of:0000000000000001](device_id)
+    - create a flow rule on device [of:0000000000000004](device_id)
+    - install flow from in_port [3](in_port) to out_port [4](out_port)
+    - push a flow rule to controller
+    - flow rule device [of:000000000000000c](device_id) from [1](in_port) to [2](out_port)
+    - set priority [30000](priority) for device [of:000000000000000f](device_id)
+    - make the device [of:000000000000000a](device_id) have a priority of [20000](priority)
+
+- intent: check_controllers
+  examples: |
+    - check controller status
+    - show controller health
+    - list available controllers
+    - which ONOS controllers are up
+    - verify controller connection
+
+- intent: get_hosts
+  examples: |
+    - show all hosts
+    - list all hosts
+    - get host list
+    - what hosts are connected
+    - fetch all hosts
+
+- intent: block_host
+  examples: |
+    - block host [0A:FC:4A:5E:45:C7](host_id)
+    - deny access to host [4A:44:A5:25:39:A1](host_id)
+    - I want to block host [A2:24:98:5A:01:26](host_id)
+    - can you block the host [0E:0A:11:68:E4:86](host_id)
+
+- intent: unblock_host
+  examples: |
+    - unblock host [CA:B4:F4:79:67:85](host_id)
+    - allow access to host [FA:C1:C3:CE:7A:13](host_id)
+    - remove block for host [9E:6F:59:BB:DC:E8](host_id)
+    - can you unblock the host [42:A2:F7:32:51:3D](host_id)
+
+- intent: get_ports
+  examples: |
+    - show ports on device [of:0000000000000001](device_id)
+    - list ports for device [of:0000000000000002](device_id)
+    - get device [of:000000000000000c](device_id) ports
+
+- intent: get_flows
+  examples: |
+    - show flows on device [of:0000000000000001](device_id)
+    - list all flows on [of:0000000000000002](device_id)
+    - get flow table of device [of:000000000000000d](device_id)
+
+- intent: show_topology
+  examples: |
+    - show network topology
+    - display current topology
+    - what is the topology
+    - visualize the network
+
+- intent: nlu_fallback
+  examples: |
+    - ajdklsajd
+    - what
+    - say again
+    - eh?
