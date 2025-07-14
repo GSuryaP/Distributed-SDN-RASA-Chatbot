@@ -1,37 +1,82 @@
 version: "3.1"
+
 rules:
-  - rule: show hosts
-    steps:
-      - intent: get_hosts
-      - action: action_get_hosts
-      
-  - rule: block host
-    steps:
-      - intent: block_host
-      - action: action_block_host
+- rule: Default fallback rule
+  steps:
+    - intent: nlu_fallback
+    - action: action_default_fallback
 
-  - rule: unblock host
-    steps:
-      - intent: unblock_host
-      - action: action_unblock_host
+- rule: greet rule
+  steps:
+    - intent: greet
+    - action: utter_greet
 
-  - rule: get ports
-    steps:
-      - intent: get_ports
-      - action: action_get_ports
+- rule: goodbye rule
+  steps:
+    - intent: goodbye
+    - action: utter_goodbye
 
-  - rule: get flows
-    steps:
-      - intent: get_flows
-      - action: action_get_flows
+- rule: affirm rule
+  steps:
+    - intent: affirm
+    - action: utter_happy
 
-  - rule: show topology
-    steps:
-      - intent: show_topology
-      - action: action_show_topology
+- rule: deny rule
+  steps:
+    - intent: deny
+    - action: utter_unhappy
 
-  - rule: Fallback rule
-    steps:
-      - intent: nlu_fallback
-      - action: action_default_fallback
+- rule: mood_happy rule
+  steps:
+    - intent: mood_happy
+    - action: utter_happy
 
+- rule: mood_unhappy rule
+  steps:
+    - intent: mood_unhappy
+    - action: utter_unhappy
+
+- rule: get_devices rule
+  steps:
+    - intent: get_devices
+    - action: action_get_devices
+
+- rule: add_flow rule
+  steps:
+    - intent: add_flow
+    - action: action_add_flow
+
+- rule: check_controllers rule
+  steps:
+    - intent: check_controllers
+    - action: action_check_controllers
+
+- rule: get_hosts rule
+  steps:
+    - intent: get_hosts
+    - action: action_get_hosts
+
+- rule: block_host rule
+  steps:
+    - intent: block_host
+    - action: action_block_host
+
+- rule: unblock_host rule
+  steps:
+    - intent: unblock_host
+    - action: action_unblock_host
+
+- rule: get_ports rule
+  steps:
+    - intent: get_ports
+    - action: action_get_ports
+
+- rule: get_flows rule
+  steps:
+    - intent: get_flows
+    - action: action_get_flows
+
+- rule: show_topology rule
+  steps:
+    - intent: show_topology
+    - action: action_show_topology
