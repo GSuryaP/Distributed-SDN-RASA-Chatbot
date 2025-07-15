@@ -114,6 +114,7 @@ class ActionGetDevices(Action):
 
 
 # === Action: Add Flow ===
+#### Works ####
 class ActionAddFlow(Action):
     def name(self) -> Text:
         return "action_add_flow"
@@ -175,6 +176,48 @@ class ActionAddFlow(Action):
         except Exception as e:
             dispatcher.utter_message(text=f"❌ Error occurred: {e}")
 
+        return []
+
+# === Action: Delete Flow ===
+class ActionDeleteFlow(Action):
+    def name(self) -> Text:
+        return "action_delete_flow"
+
+    def extract_slot(self, slot_name, tracker):
+        value = tracker.get_slot(slot_name)
+        return value.strip() if value else None
+
+    async def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[str, Any]) -> List[EventType]:
+        device_id = self.extract_slot("device_id", tracker)
+        flow_id = self.extract_slot("flow_id", tracker)
+
+        if not all([device_id, flow_id]):
+            dispatcher.utter_message(text="⚠️ Please provide both `device ID` and `flow ID` to delete the flow.")
+            return []
+
+        # 🔁 Convert hex to decimal if needed
+        try:
+            if flow_id.startswith("0x"):
+                flow_id = str(int(flow_id, 16))
+        except ValueError:
+            dispatcher.utter_message(text="❌ Invalid flow ID format. Make sure it's a proper hexadecimal or decimal value.")
+            return []
+
+        # Attempt deletion from any reachable controller
+        for ctrl in ONOS_CONTROLLERS:
+            try:
+                url = f"http://{ctrl['ip']}:{ctrl['port']}/onos/v1/flows/{device_id}/{flow_id}"
+                response = requests.delete(url, auth=AUTH, timeout=5)
+                if response.status_code in [200, 204]:
+                    dispatcher.utter_message(text=f"✅ Flow `{flow_id}` successfully deleted from device `{device_id}`.")
+                    return []
+                else:
+                    logger.warning(f"Controller {ctrl['ip']}:{ctrl['port']} responded with {response.status_code}")
+            except Exception as e:
+                logger.error(f"Failed to delete flow on {ctrl['ip']}:{ctrl['port']} - {e}")
+                continue
+
+        dispatcher.utter_message(text="❌ Failed to delete the flow. All controllers may be unreachable or not master.")
         return []
 
 # === Action: Get Controller Status ===
@@ -402,12 +445,12 @@ class ActionGetFlows(Action):
         return "action_get_flows"
 
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[str, Any]) -> List[EventType]:
+        import re
         device_id = tracker.get_slot("device_id")
 
-        # Fallback: extract from raw text if NLU missed it
+        # Extract device_id from raw message text if not found in slot
         if not device_id:
             user_text = tracker.latest_message.get("text", "")
-            import re
             match = re.search(r"(of:[0-9a-fA-F]+)", user_text)
             if match:
                 device_id = match.group(1)
@@ -421,21 +464,40 @@ class ActionGetFlows(Action):
 
         if "error" in result:
             dispatcher.utter_message(text=f"❌ Failed to fetch flows for device {device_id}.")
-        else:
-            flows = result.get("flows", [])
-            if flows:
-                flow_list = []
-                for flow in flows:
-                    flow_id = flow.get("id", "Unknown")[:8]  # Truncate for readability
-                    priority = flow.get("priority", "Unknown")
-                    state = flow.get("state", "Unknown")
-                    flow_list.append(f"🔁 {flow_id}... (Priority: {priority}, State: {state})")
+            return []
 
-                message = f"🔁 **Flows on {device_id} ({len(flows)}):**\n" + "\n".join(flow_list)
-                dispatcher.utter_message(text=message)
-            else:
-                dispatcher.utter_message(text=f"📭 No flows found on device {device_id}.")
+        flows = result.get("flows", [])
+        if not flows:
+            dispatcher.utter_message(text=f"📭 No flows found on device {device_id}.")
+            return []
 
+        message_lines = [f"🔁 **Flows on {device_id} ({len(flows)}):**"]
+
+        for flow in flows:
+            # Convert ID to hex
+            raw_id = flow.get("id", 0)
+            try:
+                flow_id = hex(int(raw_id)) if isinstance(raw_id, int) or raw_id.isdigit() else str(raw_id)
+            except:
+                flow_id = str(raw_id)
+
+            # Extract ports
+            in_port = "?"
+            out_port = "?"
+            for c in flow.get("selector", {}).get("criteria", []):
+                if c.get("type") == "IN_PORT":
+                    in_port = str(c.get("port", "?"))
+            for ins in flow.get("treatment", {}).get("instructions", []):
+                if ins.get("type") == "OUTPUT":
+                    out_port = str(ins.get("port", "?"))
+
+            # Priority and state
+            priority = flow.get("priority", "?")
+            state = flow.get("state", "?")
+
+            message_lines.append(f"🔁 ID: {flow_id} | In: {in_port} → Out: {out_port} | Prio: {priority} | State: {state}")
+
+        dispatcher.utter_message(text="\n".join(message_lines))
         return []
 
 # === Action: Show Topology ===
