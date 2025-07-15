@@ -9,6 +9,7 @@ intents:
   - mood_unhappy
   - get_devices
   - add_flow
+  - delete_flow
   - check_controllers
   - get_hosts
   - block_host
@@ -24,42 +25,44 @@ entities:
   - out_port
   - priority
   - host_id
+  - flow_id
 
 slots:
   device_id:
     type: text
-    influence_conversation: true
     mappings:
-    - type: from_entity
-      entity: device_id
+      - type: from_entity
+        entity: device_id
 
   in_port:
     type: text
-    influence_conversation: true
     mappings:
-    - type: from_entity
-      entity: in_port
+      - type: from_entity
+        entity: in_port
 
   out_port:
     type: text
-    influence_conversation: true
     mappings:
-    - type: from_entity
-      entity: out_port
+      - type: from_entity
+        entity: out_port
 
   priority:
     type: text
-    influence_conversation: true
     mappings:
-    - type: from_entity
-      entity: priority
+      - type: from_entity
+        entity: priority
 
   host_id:
     type: text
-    influence_conversation: true
     mappings:
-    - type: from_entity
-      entity: host_id
+      - type: from_entity
+        entity: host_id
+
+  flow_id:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: flow_id
 
 responses:
   utter_greet:
@@ -85,6 +88,7 @@ responses:
 actions:
   - action_get_devices
   - action_add_flow
+  - action_delete_flow
   - action_check_controllers
   - action_get_hosts
   - action_block_host
