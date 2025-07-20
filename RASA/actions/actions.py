@@ -6,6 +6,8 @@ from rasa_sdk.events import SlotSet, EventType
 import time
 import json
 import logging
+import requests
+import threading
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -533,3 +535,48 @@ class ActionShowTopology(Action):
 
         dispatcher.utter_message(text=message)
         return []
+
+# === Background task: Monitor controller health ===
+#### Works ####
+def push_alert_to_ui(text):
+    try:
+        requests.post(
+            "http://localhost:5050/push_alert",  # This goes to your Flask mini server
+            json={"alert": text}
+        )
+    except Exception as e:
+        print(f"[Alert Push Error] {e}")
+
+# Monitor Function
+def monitor_controllers():
+    down_set = set()
+
+    while True:
+        for ctrl in ONOS_CONTROLLERS:
+            ip, port = ctrl["ip"], ctrl["port"]
+            url = f"http://{ip}:{port}/onos/v1/cluster"
+
+            try:
+                res = requests.get(url, auth=AUTH, timeout=2)
+                if res.status_code == 200:
+                    if f"{ip}:{port}" in down_set:
+                        print(f"✅ {ip}:{port} recovered")
+                        down_set.remove(f"{ip}:{port}")
+                else:
+                    raise Exception()
+            except:
+                if f"{ip}:{port}" not in down_set:
+                    down_set.add(f"{ip}:{port}")
+                    alert = f"🔴 ALERT: Controller at {ip}:{port} is DOWN!"
+                    print(f"[ALERT] {alert}")
+                    try:
+                        push_alert_to_ui(alert)
+                    except Exception as e:
+                        print(f"[UI Alert Error] {e}")
+
+        time.sleep(10)
+        print(alert)
+        push_alert_to_ui(alert)
+
+# Start monitor thread on action server startup
+threading.Thread(target=monitor_controllers, daemon=True).start()
