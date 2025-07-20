@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="icon" href="./static/img/icon.png">
+  <title>NetwBot</title>
+  <style>
+    :root {
+      --bg-color-light: #f0f4f8;
+      --chat-bg-light: white;
+      --input-bg-light: #ffffff;
+      --text-color-light: #000;
+      --bot-bg-light: #e0e0e0;
+      --user-bg-light: #dff9fb;
+
+      --chat-bg-dark: #1e1e1e;
+      --input-bg-dark: #2a2a2a;
+      --text-color-dark: #f0f0f0;
+      --bot-bg-dark: #3a3a3a;
+      --user-bg-dark: #007b83;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background-color: var(--bg-color-light); /* Always light */
+      color: var(--text-color-light);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .chat-container {
+      width: 95vw;
+      height: 90vh;
+      background-color: var(--chat-bg-light);
+      color: var(--text-color-light);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    .chat-container.dark {
+      background-color: var(--chat-bg-dark);
+      color: var(--text-color-dark);
+    }
+
+    .chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: #2f80ed;
+      color: white;
+      padding: 16px 24px;
+    }
+
+    .chat-header img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+
+    .chat-header h3 {
+      margin: 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .toggle-theme {
+      background: none;
+      border: 2px solid white;
+      border-radius: 6px;
+      padding: 4px 10px;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .chat-box {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .message {
+      margin-bottom: 15px;
+      padding: 10px 15px;
+      border-radius: 10px;
+      max-width: 75%;
+      line-height: 1.5;
+      word-wrap: break-word;
+      transition: background 0.3s ease;
+    }
+
+    .user-message {
+      background-color: var(--user-bg-light);
+      align-self: flex-end;
+    }
+
+    .bot-message {
+      background-color: var(--bot-bg-light);
+      align-self: flex-start;
+    }
+
+    .chat-container.dark .user-message {
+      background-color: var(--user-bg-dark);
+    }
+
+    .chat-container.dark .bot-message {
+      background-color: var(--bot-bg-dark);
+    }
+
+    .input-box {
+      display: flex;
+      padding: 16px 24px;
+      border-top: 1px solid #ccc;
+      background-color: var(--input-bg-light);
+      transition: background 0.3s ease;
+    }
+
+    .chat-container.dark .input-box {
+      background-color: var(--input-bg-dark);
+    }
+
+    .input-box input {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    .input-box button {
+      padding: 10px 20px;
+      margin-left: 10px;
+      background-color: #2f80ed;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .input-box input:focus {
+      border-color: #2f80ed;
+      box-shadow: 0 0 0 2px rgba(47, 128, 237, 0.2);
+    }
+
+    @media screen and (max-width: 768px) {
+      .chat-container {
+        width: 90%;
+        height: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="chat-container" id="chat-container">
+    <div class="chat-header">
+      <h3>
+        <img src="bot-logo.png" alt="Bot" />
+        NetwBot
+      </h3>
+      <button class="toggle-theme" onclick="toggleTheme()">Toggle Theme</button>
+    </div>
+    <div class="chat-box" id="chat-box">
+      <div id="alert-box" style="display:none; background-color: #f44336; color: white; padding: 10px; margin: 10px; border-radius: 4px; font-family: monospace;"></div>
+      <!-- Messages will appear here -->
+    </div>
+    <div class="input-box">
+      <input type="text" id="user-input" placeholder="Type a message..." onkeypress="handleKey(event)" />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const rasaUrl = "http://localhost:5005/webhooks/rest/webhook";
+
+    function addMessage(message, sender) {
+      const chatBox = document.getElementById('chat-box');
+      const msgDiv = document.createElement('div');
+      msgDiv.classList.add('message', sender === 'user' ? 'user-message' : 'bot-message');
+      msgDiv.innerHTML = message.replace(/\n/g, "<br>");
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function pollAlerts() {
+      try {
+        const response = await fetch("http://localhost:5050/get_alerts");
+        const data = await response.json();
+        displayAlerts(data);
+      } catch (err) {
+        console.error("Alert poll error:", err);
+      }
+    }
+
+    function displayAlerts(alertList) {
+      const alertBox = document.getElementById("alert-box");
+      alertBox.innerHTML = "";  // Clear old content
+
+      if (alertList.length === 0) {
+        alertBox.style.display = "none";
+        return;
+      }
+
+      alertList.forEach(alert => {
+        const entry = document.createElement("div");
+        entry.innerText = `[${alert.timestamp}] ${alert.message}`;
+        entry.style.marginBottom = "6px";
+        alertBox.appendChild(entry);
+      });
+
+      alertBox.style.display = "block";
+    }
+
+    setInterval(pollAlerts, 5000);
+
+    async function sendMessage() {
+      const inputField = document.getElementById('user-input');
+      const message = inputField.value.trim();
+      if (!message) return;
+
+      addMessage(message, 'user');
+      inputField.value = '';
+
+      try {
+        const response = await fetch(rasaUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sender: 'user', message: message })
+        });
+
+        const data = await response.json();
+        if (data && data.length > 0) {
+          data.forEach(item => {
+            if (item.text) {
+              // Check for alert message
+              if (item.text.startsWith("🔴 ALERT")) {
+                // Display alert popup
+                alert(item.text);
+
+                // You can also log or style it differently here
+                addMessage(`<strong style="color:red;">${item.text}</strong>`, 'bot');
+              } else {
+                addMessage(item.text, 'bot');
+              }
+            }
+          });
+        } else {
+          addMessage("⚠️ No response from Rasa", 'bot');
+        }
+      } catch (err) {
+        addMessage("⚠️ Error sending message", 'bot');
+        console.error(err);
+      }
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Enter') sendMessage();
+    }
+
+    function toggleTheme() {
+      const chatContainer = document.getElementById("chat-container");
+      chatContainer.classList.toggle("dark");
+    }
+
+    window.onload = function () {
+      addMessage("Hello, I am your ONOS network chatbot....", 'bot');
+    };
+  </script>
+</body>
+</html>
