@@ -87,6 +87,20 @@ nlu:
     - show connected hosts
     - get hosts in network
 
+- intent: find_path
+  examples: |
+    - find path from [00:00:00:00:00:01](source_host) to [00:00:00:00:00:02](destination_host)
+    - show path between [AA:BB:CC:DD:EE:FF](source_host) and [11:22:33:44:55:66](destination_host)
+    - find path from [AA:BB:CC:DD:EE:FF](source_host) to [11:22:33:44:55:66](destination_host)
+    - show route between [00:11:22:33:44:55](source_host) and [AA:BB:CC:DD:EE:FF](destination_host)
+    - path from host [2A:2C:F4:34:B8:2E](source_host) to host [1A:1C:F4:34:B8:2E](destination_host)
+    - route between [00:00:00:00:00:01](source_host) and [00:00:00:00:00:02](destination_host)
+    - find shortest path from [10:20:30:40:50:60](source_host) to [60:50:40:30:20:10](destination_host)
+    - trace route from [AA:AA:AA:AA:AA:AA](source_host) to [BB:BB:BB:BB:BB:BB](destination_host)
+    - show path between host [12:34:56:78:9A:BC](source_host) and host [BC:9A:78:56:34:12](destination_host)
+    - calculate path from [FF:FF:FF:FF:FF:FF](source_host) to [00:00:00:00:00:00](destination_host)
+
+## optional
 - intent: block_host
   examples: |
     - block host AA:BB:CC:DD:EE:FF
@@ -96,6 +110,7 @@ nlu:
     - please block host [AA:BB:CC:DD:EE:FF](host_id)
     - deny host [00:11:22:33:44:55](host_id)
 
+## optional
 - intent: unblock_host
   examples: |
     - unblock host AA:BB:CC:DD:EE:FF
@@ -106,15 +121,15 @@ nlu:
 
 - intent: get_ports
   examples: |
-    - show ports on of:0000000000000001
-    - list ports of device of:0000000000000002
-    - show ports on device [of:0000000000000001](device_id)
-    - ports on switch [of:0000000000000001](device_id)
+    - show ports on [of:0000000000000001] (device_id)
+    - list ports of device [of:000000000000000a] (device_id)
+    - show ports on device [of:000000000000000b](device_id)
+    - ports on switch [of:000000000000001d](device_id)
 
 - intent: get_flows
   examples: |
-    - show flows on device of:0000000000000001
-    - get flow table for of:0000000000000002
+    - show flows on device [of:0000000000000001](device_id)
+    - get flow table for [of:0000000000000002](device_id)
     - show flows on device [of:0000000000000001](device_id)
     - get all flows on [of:0000000000000005](device_id)
     - display flows on [of:0000000000000003](device_id)
