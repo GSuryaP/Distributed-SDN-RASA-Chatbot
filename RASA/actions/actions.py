@@ -6,14 +6,13 @@ from rasa_sdk.events import SlotSet, EventType
 import time
 import json
 import logging
-import requests
 import threading
+import re
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Configurable ONOS controllers (IPs and ports)
 ONOS_CONTROLLERS = [
     {"ip": "localhost", "port": 8181},
     {"ip": "localhost", "port": 8182},
@@ -24,67 +23,34 @@ ONOS_CONTROLLERS = [
 
 AUTH = ("onos", "rocks")
 
-
-# === Utility: Request with failover and mastership-aware ===
-def send_to_healthy_controller(endpoint: str, method="get", data=None, json=None, device_id=None, require_mastership=False) -> Any:
-    """
-    Send request to a healthy ONOS controller with failover support.
-    
-    Args:
-        endpoint: API endpoint to call
-        method: HTTP method (get, post, put, delete)
-        data: Request data for non-JSON payloads
-        json: JSON payload for requests
-        device_id: Device ID for mastership checks
-        require_mastership: Whether to check mastership before sending request
-    
-    Returns:
-        Response data or error dictionary
-    """
+def send_to_healthy_controller(endpoint: str, method="get", data=None, json_payload=None, device_id=None, require_mastership=False) -> Any:
     for ctrl in ONOS_CONTROLLERS:
         try:
-            # If checking mastership is required
             if require_mastership and device_id:
                 master_url = f"http://{ctrl['ip']}:{ctrl['port']}/onos/v1/mastership/{device_id}"
-                try:
-                    master_resp = requests.get(master_url, auth=AUTH, timeout=2)
-                    if master_resp.ok:
-                        master_data = master_resp.json()
-                        master_id = master_data.get("master", {}).get("id", "")
-                        # Check if this controller is the master
-                        if master_id and f"{ctrl['ip']}:{ctrl['port']}" not in master_id:
-                            logger.info(f"Controller {ctrl['ip']}:{ctrl['port']} is not master for device {device_id}")
-                            continue
-                    else:
-                        logger.warning(f"Failed to check mastership on {ctrl['ip']}:{ctrl['port']}")
+                master_resp = requests.get(master_url, auth=AUTH, timeout=2)
+                if master_resp.ok:
+                    master_id = master_resp.json().get("master", {}).get("id", "")
+                    if master_id and f"{ctrl['ip']}:{ctrl['port']}" not in master_id:
                         continue
-                except requests.RequestException as e:
-                    logger.warning(f"Mastership check failed for {ctrl['ip']}:{ctrl['port']}: {e}")
+                else:
                     continue
-
-            # Send the actual request
             url = f"http://{ctrl['ip']}:{ctrl['port']}{endpoint}"
-            logger.info(f"Sending {method.upper()} request to {url}")
-            
-            resp = requests.request(method, url, auth=AUTH, timeout=5, data=data, json=json)
-            
+            resp = requests.request(method, url, auth=AUTH, timeout=5, data=data, json=json_payload)
             if resp.ok:
-                # Return JSON if content type is JSON, otherwise return text
                 if resp.headers.get("Content-Type", "").startswith("application/json"):
                     return resp.json()
                 else:
                     return {"status": "success", "message": resp.text}
-            else:
-                logger.warning(f"Request failed with status {resp.status_code}: {resp.text}")
-                
-        except requests.RequestException as e:
-            logger.warning(f"Request to {ctrl['ip']}:{ctrl['port']} failed: {e}")
-            time.sleep(0.1)  # Small delay before trying next controller
+        except requests.RequestException:
+            time.sleep(0.1)
             continue
-    
     return {"error": "All controllers unreachable or not master for this device"}
 
-
+def extract_slot_value(tracker: Tracker, slot_name: str) -> str:
+    value = tracker.get_slot(slot_name)
+    return value.strip() if value else None
+    
 # === Action: Get Devices ===
 #### Works ####
 class ActionGetDevices(Action):
@@ -292,7 +258,7 @@ class ActionGetHosts(Action):
                     element_id = location_obj.get("elementId", "Unknown")
                     port = location_obj.get("port", "Unknown")
 
-                    host_list.append(f"🏠 {host_id} (MAC: {mac}, IP: {ip})")
+                    host_list.append(f" {host_id} (MAC: {mac}, IP: {ip})")
 
                 message = f"🏠 Number of Network Hosts ({len(hosts)}):\n" + "\n".join(host_list)
                 dispatcher.utter_message(text=message)
@@ -411,34 +377,44 @@ class ActionGetPorts(Action):
     def name(self) -> str:
         return "action_get_ports"
 
-    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[str, Any]) -> List[EventType]:
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[str, Any]
+    ) -> List[EventType]:
         device_id = tracker.get_slot("device_id")
-        if not device_id:
-            dispatcher.utter_message(text="⚠️ Please specify a device ID (e.g., 'show ports on device of:0000000000000001')")
-            return []
-        
+
+        user_input = tracker.latest_message.get("text", "").lower().strip()
+        if not device_id or user_input in ["show ports", "get ports", "ports", "port status"]:
+            dispatcher.utter_message(
+                text="⚠️ Please specify a device ID.\n"
+                     "Example: `show ports on device of:0000000000000001`"
+            )
+            return [SlotSet("device_id", None)]
+
         logger.info(f"Getting ports for device: {device_id}")
         result = send_to_healthy_controller(f"/onos/v1/devices/{device_id}/ports")
-        
-        if "error" in result:
-            dispatcher.utter_message(text=f"❌ Failed to fetch ports for device {device_id}.")
-        else:
-            ports = result.get("ports", [])
-            if ports:
-                port_list = []
-                for port in ports:
-                    port_num = port.get("port", "Unknown")
-                    enabled = "✅" if port.get("isEnabled", False) else "❌"
-                    speed = port.get("portSpeed", "Unknown")
-                    port_list.append(f"{enabled} Port {port_num} (Speed: {speed})")
-                
-                message = f"🔌 **Ports on {device_id} ({len(ports)}):**\n" + "\n".join(port_list)
-                dispatcher.utter_message(text=message)
-            else:
-                dispatcher.utter_message(text=f"📭 No ports found on device {device_id}.")
-        
-        return []
 
+        if "error" in result:
+            dispatcher.utter_message(text=f"❌ Failed to fetch ports for device `{device_id}`.")
+            return []
+
+        ports = result.get("ports", [])
+        if ports:
+            port_list = []
+            for port in ports:
+                port_num = port.get("port", "Unknown")
+                enabled = "✅" if port.get("isEnabled", False) else "❌"
+                speed = port.get("portSpeed", "Unknown")
+                port_list.append(f"{enabled} Port {port_num} (Speed: {speed})")
+
+            message = f"🔌 **Ports on `{device_id}` ({len(ports)} total):**\n" + "\n".join(port_list)
+            dispatcher.utter_message(text=message)
+        else:
+            dispatcher.utter_message(text=f"📭 No ports found on device `{device_id}`.")
+
+        return []
 
 # === Action: Get Flows ===
 #### Works ####
@@ -458,7 +434,7 @@ class ActionGetFlows(Action):
                 device_id = match.group(1)
 
         if not device_id:
-            dispatcher.utter_message(text="⚠️ Please specify a device ID (e.g., 'show flows on device of:0000000000000001')")
+            dispatcher.utter_message(text="⚠️ Please specify a device ID \n Example: 'show flows on device of:0000000000000001'")
             return []
 
         logger.info(f"Getting flows for device: {device_id}")
@@ -536,6 +512,89 @@ class ActionShowTopology(Action):
         dispatcher.utter_message(text=message)
         return []
 
+class ActionFindPath(Action):
+    def name(self) -> str:
+        return "action_find_path"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[str, Any]
+    ) -> List[EventType]:
+        source_host = extract_slot_value(tracker, "source_host")
+        destination_host = extract_slot_value(tracker, "destination_host")
+
+        # Detect "find path" without any MACs or slot values
+        user_input = tracker.latest_message.get("text", "").lower().strip()
+        if user_input in ["find path", "show path", "path", "route", "find route"] or not all([source_host, destination_host]):
+            dispatcher.utter_message(
+                text="⚠️ Please provide both source and destination MAC addresses.\n"
+                     "Example: `find path from 5A:4B:3C:2D:1E:0F to A1:B2:C3:D4:E5:F6`"
+            )
+            # Clear any leftover slots
+            return [SlotSet("source_host", None), SlotSet("destination_host", None)]
+
+        logger.info(f"Finding path from {source_host} to {destination_host}")
+
+        # Step 1: Get all hosts
+        hosts_result = send_to_healthy_controller("/onos/v1/hosts")
+        if "error" in hosts_result:
+            dispatcher.utter_message(text="❌ Failed to fetch host data.")
+            return []
+
+        hosts = hosts_result.get("hosts", [])
+        src_host_info = next((h for h in hosts if h.get("mac", "").lower() == source_host.lower()), None)
+        dst_host_info = next((h for h in hosts if h.get("mac", "").lower() == destination_host.lower()), None)
+
+        # Step 2: Verify existence
+        if not src_host_info:
+            dispatcher.utter_message(text=f"❌ Source host `{source_host}` not found.")
+            return [SlotSet("source_host", None)]
+        if not dst_host_info:
+            dispatcher.utter_message(text=f"❌ Destination host `{destination_host}` not found.")
+            return [SlotSet("destination_host", None)]
+
+        # Step 3: Get location info
+        src_loc = src_host_info["locations"][0]
+        dst_loc = dst_host_info["locations"][0]
+        src_device = src_loc["elementId"]
+        dst_device = dst_loc["elementId"]
+        src_port = src_loc["port"]
+        dst_port = dst_loc["port"]
+
+        # Same switch?
+        if src_device == dst_device:
+            dispatcher.utter_message(
+                text=f"🎯 Both hosts are connected to the same device `{src_device}`.\n"
+                     f"📍 {source_host} on {src_device}:{src_port}\n"
+                     f"📍 {destination_host} on {dst_device}:{dst_port}\n"
+                     f"🔄 Direct communication possible."
+            )
+            return []
+
+        # Step 4: Find path
+        path_result = send_to_healthy_controller(f"/onos/v1/paths/{src_device}/{dst_device}")
+        if "error" in path_result or "paths" not in path_result or not path_result["paths"]:
+            dispatcher.utter_message(text="⚠️ No path found between the hosts.")
+            return []
+
+        path = path_result["paths"][0]
+        links = path.get("links", [])
+        hops = []
+        for link in links:
+            src = link["src"]
+            dst = link["dst"]
+            hops.append(f"{src['device']}:{src['port']} ➡️ {dst['device']}:{dst['port']}")
+
+        dispatcher.utter_message(
+            text=f"🔍 **Path from {source_host} to {destination_host}:**\n"
+                 f"📍 Start: {src_device}:{src_port}\n"
+                 + "\n".join(hops) +
+                 f"\n📍 End: {dst_device}:{dst_port}"
+        )
+        return []
+
 # === Background task: Monitor controller health ===
 #### Works ####
 def push_alert_to_ui(text):
@@ -575,8 +634,13 @@ def monitor_controllers():
                         print(f"[UI Alert Error] {e}")
 
         time.sleep(10)
-        print(alert)
-        push_alert_to_ui(alert)
+
+        # Only push alert if something went down in this cycle
+        if down_set:
+            for down in down_set:
+                alert = f"🔴 ALERT: Controller at {down} is DOWN!"
+                print(f"[ALERT] {alert}")
+                push_alert_to_ui(alert)
 
 # Start monitor thread on action server startup
 threading.Thread(target=monitor_controllers, daemon=True).start()
