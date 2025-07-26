@@ -31,25 +31,25 @@ Ensure the following are installed on **Ubuntu 24.04**:
 ---
 ## 🛠️ Project Setup and Execution
 
-1. 🔃 Clone the Repository
+1. Clone the Repository
 Run ```git clone https://github.com/your-username/rasa-onos-monitoring.git``` and then ```cd rasa-onos-monitoring```
 
-2. 🧠 Launch ONOS Cluster (5 controllers)
+2. Launch ONOS Cluster (5 controllers)
 ```./onos_cluster_setup.sh``` and wait for containers to fully start. Then verify ONOS UI using ```http://localhost:8181/onos/ui/#/topo2``` in the browser. You should see 5 controllers initialized.
 
-3. 🔐 Access ONOS Karaf Shells
+3. Access ONOS Karaf Shells
 To access ONOS CLI on all 5 instances, run ```./karaf_ssh.sh```. This opens terminals for ports 8101–8105.
 
-4. 🌐 Start Mininet Network
+4. Start Mininet Network
 Execute the command ```sudo ./mininet_run.sh``` and then return to ONOS UI at ```http://localhost:8181/onos/ui/#/topo2``` and check the topology. You should now see the full network graph populated.
 
-6. ⚙️ Start RASA Action Server
+6. Start RASA Action Server
 In the root directory with python3.8 virtual environment activated run ```rasa run actions```. This will run actions.py inside the actions/ folder.
 
-7. 🧠 Start RASA Server
+7. Start RASA Server
 In a new terminal with the python3.8 virtual environment still activated, run ```rasa run --enable-api --cors "*" --debug```. This allows RASA to listen for chatbot queries via REST API.
 
-8. 💬 Open the Chatbot UI
+8. Open the Chatbot UI
 In another terminal, go to the UI directory and start a simple HTTP server by running ```python3 -m http.server 8000```. Then open the chatbot interface in your browser using the url ```🔗 http://localhost:8000```
 
 ---
