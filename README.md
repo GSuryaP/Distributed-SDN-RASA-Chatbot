@@ -3,6 +3,16 @@
 This project integrates a **5-node ONOS cluster**, **Mininet topology**, and a **RASA-powered chatbot UI** to monitor and manage an SDN network in real time. The setup is designed for **Ubuntu 24.04**.
 
 ---
+## 🧰 Prerequisites
+
+Ensure the following are installed on **Ubuntu 24.04**:
+
+- Docker & Docker Compose
+- Mininet
+- Python 3.8
+- RASA (compatible with Python 3.8, preferably in a virtual environment)
+
+---
 
 ## 📁 Directory Structure
 ```
@@ -18,16 +28,6 @@ This project integrates a **5-node ONOS cluster**, **Mininet topology**, and a *
 ├── mininet_run.sh # Launches the SDN topology in Mininet
 
 ```
----
-## 🧰 Prerequisites
-
-Ensure the following are installed on **Ubuntu 24.04**:
-
-- Docker & Docker Compose
-- Mininet
-- Python 3.8
-- RASA (compatible with Python 3.8, preferably in a virtual environment)
-
 ---
 ## 🛠️ Project Setup and Execution
 
