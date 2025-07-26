@@ -58,13 +58,9 @@ In another terminal, go to the UI directory and start a simple HTTP server by ru
 Try the following messages in the chatbot UI
 ```
 "Show me the topology"
-
 "List all devices"
-
 "Get all flows on device of:0000000000000003"
-
 "Add flow on device of:0000000000000003 with in port 1 and out port 2 and priority 55"
-
 "Block host with IP 10.0.0.2"
 ```
 These will trigger real-time API calls to your ONOS cluster and reflect changes in the topology.
