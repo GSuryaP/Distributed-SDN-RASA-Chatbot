@@ -46,7 +46,7 @@ rules:
     - intent: add_flow
     - action: action_add_flow
 
-- rule: Delete flow on a device
+- rule: delete_flow rule
   steps:
     - intent: delete_flow
     - action: action_delete_flow
@@ -90,3 +90,8 @@ rules:
   steps:
     - intent: find_path
     - action: action_find_path
+
+- rule: bad_context rule
+  steps:
+    - intent: bad_context
+    - action: utter_default
