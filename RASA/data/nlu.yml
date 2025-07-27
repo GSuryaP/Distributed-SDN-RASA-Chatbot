@@ -8,6 +8,7 @@ nlu:
     - hey
     - good morning
     - good evening
+    - wassup
 
 - intent: goodbye
   examples: |
@@ -15,6 +16,7 @@ nlu:
     - goodbye
     - see you later
     - take care
+    - bye bye
 
 - intent: affirm
   examples: |
@@ -22,12 +24,15 @@ nlu:
     - sure
     - okay
     - indeed
+    - yup
 
 - intent: deny
   examples: |
     - no
     - never
     - not really
+    - nope
+    - nah
 
 - intent: mood_happy
   examples: |
@@ -47,9 +52,20 @@ nlu:
     - list all switches
     - what devices are connected
     - get connected switches
+    - pull up a list of all connected devices
+    - can you show me what are all the devices connected
+    - list me all the devices connected in the network
+    - please show me all the devices in the network
 
 - intent: add_flow
   examples: |
+    - add flow to [of:0000000000000001](device_id) from port [1](in_port) to port [2](out_port) with priority [40000](priority)
+    - set flow on [of:000000000000000e](device_id) from port [3](in_port) to [4](out_port) at priority [30000](priority)
+    - insert flow rule for [of:0000000000000003](device_id) input port [5](in_port) output port [6](out_port) with priority [10000](priority)
+    - add flow to [of:000000000000000b](device_id) from port [1](in_port) to port [2](out_port) with priority [40000](priority)
+    - set flow on [of:0000000000000009](device_id) from port [3](in_port) to [4](out_port) at priority [30000](priority)
+    - add flow rule to device [of:00000000000000a0](device_id) from port [2](in_port) to port [3](out_port) with priority [25000](priority)
+    - push flow to [of:0000000000000017](device_id) on port [1](in_port) to [2](out_port) with priority [40000](priority)
     - add flow to [of:0000000000000001](device_id) from port [1](in_port) to port [2](out_port) with priority [40000](priority)
     - set flow on [of:0000000000000002](device_id) from port [3](in_port) to [4](out_port) at priority [30000](priority)
     - insert flow rule for [of:0000000000000003](device_id) input port [5](in_port) output port [6](out_port) with priority [10000](priority)
@@ -64,13 +80,15 @@ nlu:
 
 - intent: delete_flow
   examples: |
-    - delete flow [0xabc123](flow_id) from device [of:0000000000000001](device_id)
-    - remove flow rule [0x456def](flow_id) on switch [of:0000000000000002](device_id)
-    - delete flow id [0x9ab3](flow_id) from [of:0000000000000003](device_id)
-    - delete flow [0x123abc](flow_id) from [of:0000000000000001](device_id)
-    - delete flow with ID [0xc00000232116aa](flow_id) on device [of:0000000000000001](device_id)
-    - remove flow with ID [0xdeadbeef](flow_id) from [of:0000000000000002](device_id)
-    - delete flow [0xabcdef1234](flow_id) on [of:0000000000000003](device_id)
+    - delete flow [0x1880000875fd627](flow_id) from device [of:0000000000000001](device_id)
+    - remove flow rule [0x10000e91c3202](flow_id) on switch [of:0000000000000002](device_id)
+    - delete flow id [0x2a570e1d4b79e06](flow_id) from [of:000000000000000c](device_id)
+    - delete flow [0x5f2b17c875fd627](flow_id) from [of:000000000000001f](device_id)
+    - delete flow with ID [0xc00000232116aa](flow_id) on device [of:0000000000000008](device_id)
+    - remove flow with ID [0x648d5a433122f61](flow_id) from [of:000000000000002a](device_id)
+    - delete flow [0x10000810531f2](flow_id) on [of:000000000000000b](device_id)
+    - please delete the flow [0x1db00004b7493d5](flow_id) on [of:0000000000000006](device_id)
+    - can you remove the flow [0x1db000033d8c2fb](flow_id) on device [of:0000000000000024](device_id)
 
 - intent: check_controllers
   examples: |
@@ -80,12 +98,79 @@ nlu:
     - are all the controllers active?
     - status of controllers
     - controller health
+    - can you pull up all the controller status?
+    - please list out all the controllers 
+    - what is the status of the controllers?
+    - can you show me the controller status
+    - what's the controller health status?
 
 - intent: get_hosts
   examples: |
     - list all hosts
     - show connected hosts
     - get hosts in network
+    - can you tell me what are all the hosts available
+    - pull up a list of all the hosts in the network
+    - what are all the hosts available?
+
+- intent: block_host
+  examples: |
+    - block host [10.0.0.1](host_id)
+    - deny access to host [10.0.0.4](host_id)
+    - restrict traffic from host [10.0.0.9](host_id)
+    - can you block the host [10.0.0.14](host_id)
+    - please block host [10.0.0.7](host_id)
+    - deny host [10.0.0.2](host_id)
+    - drop all traffic from host [10.0.0.6](host_id)
+    - stop all traffic from [10.0.0.10](host_id)
+    - block all traffic from [10.0.0.3](host_id) 
+    - can you block [10.0.0.11](host_id)
+
+- intent: unblock_host
+  examples: |
+    - unblock host [10.0.0.1](host_id)
+    - allow access to host [10.0.0.4](host_id)
+    - unrestrict traffic from host [10.0.0.9](host_id)
+    - please unblock host [10.0.0.7](host_id)
+    - allow traffic from [10.0.0.10](host_id)
+    - unblock all traffic from [10.0.0.3](host_id) 
+    - can you unblock [10.0.0.11](host_id)
+
+- intent: get_ports
+  examples: |
+    - show ports on [of:0000000000000001](device_id)
+    - list ports of device [of:0000000000000002](device_id)
+    - show ports on device [of:000000000000000b](device_id)
+    - ports on switch [of:000000000000001d](device_id)
+    - pull up the ports on device [of:000000000000002e](device_id)
+    - can you show me the ports of device [of:0000000000000007](device_id)
+    - what are the ports of device [of:0000000000000015](device_id)
+
+- intent: get_flows
+  examples: |
+    - show flows on device [of:0000000000000001](device_id)
+    - get flow table for [of:0000000000000008](device_id)
+    - can you show me the flows on device [of:000000000000003c](device_id)
+    - get all flows on [of:0000000000000005](device_id)
+    - display flows on [of:00000000000000a3](device_id)
+    - flow table for [of:0000000000000012](device_id)
+    - show me the flows on device [of:000000000000000f](device_id)
+    - flows on switch [of:000000000000000a](device_id)
+    - pull up the flows on device [of:000000000000002e](device_id)
+    - what are the flows on device [of:0000000000000006](device_id)
+
+- intent: show_topology
+  examples: |
+    - show network topology
+    - get topology
+    - visualize topology
+    - pull up the network topology
+    - can you show me the topology
+    - please bring up the network topology
+    - what does the network topology look like?
+    - what all do i have in my network?
+    - show me what are all the components in the network
+    - what are the components in the network?
 
 - intent: find_path
   examples: |
@@ -97,53 +182,126 @@ nlu:
     - route between [00:00:00:00:00:01](source_host) and [00:00:00:00:00:02](destination_host)
     - find shortest path from [10:20:30:40:50:60](source_host) to [60:50:40:30:20:10](destination_host)
     - trace route from [AA:AA:AA:AA:AA:AA](source_host) to [BB:BB:BB:BB:BB:BB](destination_host)
-    - show path between host [12:34:56:78:9A:BC](source_host) and host [BC:9A:78:56:34:12](destination_host)
+    - give me the path between host [12:34:56:78:9A:BC](source_host) and host [BC:9A:78:56:34:12](destination_host)
     - calculate path from [FF:FF:FF:FF:FF:FF](source_host) to [00:00:00:00:00:00](destination_host)
-
-## optional
-- intent: block_host
-  examples: |
-    - block host AA:BB:CC:DD:EE:FF
-    - deny access to host
-    - restrict host traffic
-    - block host [2A:2C:F4:34:B8:2E](host_id)
-    - please block host [AA:BB:CC:DD:EE:FF](host_id)
-    - deny host [00:11:22:33:44:55](host_id)
-
-## optional
-- intent: unblock_host
-  examples: |
-    - unblock host AA:BB:CC:DD:EE:FF
-    - allow host
-    - permit host traffic
-    - unblock host [2A:2C:F4:34:B8:2E](host_id)
-    - allow host [AA:BB:CC:DD:EE:FF](host_id)
-
-- intent: get_ports
-  examples: |
-    - show ports on [of:0000000000000001] (device_id)
-    - list ports of device [of:000000000000000a] (device_id)
-    - show ports on device [of:000000000000000b](device_id)
-    - ports on switch [of:000000000000001d](device_id)
-
-- intent: get_flows
-  examples: |
-    - show flows on device [of:0000000000000001](device_id)
-    - get flow table for [of:0000000000000002](device_id)
-    - show flows on device [of:0000000000000001](device_id)
-    - get all flows on [of:0000000000000005](device_id)
-    - display flows on [of:0000000000000003](device_id)
-    - flow table for [of:0000000000000012](device_id)
-    - show flows on device [of:0000000000000001](device_id)
-    - flows on switch [of:0000000000000001](device_id)
-
-- intent: show_topology
-  examples: |
-    - show network topology
-    - get topology
-    - visualize topology
+    - find me a path from [8A:A5:AC:3B:E5:3C](source_host) to [2E:B3:38:FF:B2:F8](destination_host)
+    - show path between [D6:33:FF:5C:80:4D](source_host) and [6A:37:F0:D1:CB:7E](destination_host)
+    - find path from device [5A:A5:2C:79:89:1A](source_host) to device [C6:07:F9:EC:F3:06](destination_host)
+    - what's a route between [6A:37:F0:D1:CB:7E](source_host) and [46:8B:97:33:CA:17](destination_host)
+    - path from host [2A:2C:F4:34:B8:2E](source_host) to host [1A:1C:F4:34:B8:2E](destination_host)
+    - route between [96:3C:DF:CF:AD:E7](source_host) and [9A:47:27:E8:D4:45](destination_host)
+    - find shortest path from [12:50:CF:49:5B:AC](source_host) to [B2:5E:77:83:D8:5E](destination_host)
+    - trace route from [66:FD:98:99:1B:2C](source_host) to [5E:06:69:57:6F:97](destination_host)
+    - show path between host [A6:5E:A0:01:ED:46](source_host) and host [82:D1:21:1C:EC:61](destination_host)
+    - calculate path from [7E:A2:C8:BA:92:BC](source_host) to [6E:5F:92:68:46:52](destination_host)
 
 - intent: nlu_fallback
   examples: |
     - random gibberish
     - asdfghjk
+    - laksndlfasfa
+    - akjdhakjdfhasd
+    - 1234&@#dfkjl
+    - !@#$%&*()
+    - qwertyuiopasdfghjklzxcvbnm
+    - xcvnasdfghjklqwertyu
+    - !@#$^%$@!#
+    - ;lkjhlkjhlkjhlkj
+    - asdfghjklqwerty
+    - abc123!
+    - 77kdsd?asd
+    - blergh
+    - kwjdkwjjkjksk!
+    - whoopty doo
+    - @#%$&$#@$^%$
+    - %%&&***&&&&
+    - ^^%%$$#@!!
+    - ^&*()()()(
+    - j$@#&@%!
+    - what?
+    - huh?
+    - huh?
+    - okay?
+    - oh
+    - mmhm
+    - huhh?
+    - idk
+    - purple pizza
+    - moonlight stargazing
+    - running up walls
+    - I like bananas
+    - fish tanks on Mars
+    - lmao
+    - lol
+    - bruh
+    - ya vah
+
+- intent: bad_context
+  examples: |
+    - What is the weather like today?
+    - Tell me a joke.
+    - What is the capital of France?
+    - Can you give me stock market advice?
+    - How do I make a cake?
+    - What is the meaning of life?
+    - What is your favorite movie?
+    - Can you play music for me?
+    - Can you tell me a fun fact?
+    - What's the weather like today?
+    - Is it going to rain tomorrow?
+    - Tell me the forecast for next week.
+    - What's the temperature right now?
+    - Can you tell me if it's sunny outside?
+    - Do I need an umbrella today?
+    - What's the air quality in my city?
+    - What should I do with my life?
+    - How can I be happy?
+    - Can you give me advice on relationships?
+    - What's the meaning of life?
+    - How do I find peace of mind?
+    - What's the best way to handle stress?
+    - Can you help me with life decisions?
+    - How can I be successful in life?
+    - What's your favorite food?
+    - Are you married?
+    - Where do you live?
+    - What are your hobbies?
+    - What's your favorite color?
+    - Do you have a family?
+    - Are you a human or a robot?
+    - Do you like music?
+    - Can you help me find a good movie to watch?
+    - Do you know any good books to read?
+    - Can you suggest a good restaurant?
+    - What's the best way to organize my closet?
+    - Can you recommend a vacation spot?
+    - Can you tell me a joke?
+    - Tell me a fun fact.
+    - What's your favorite song?
+    - Can you play some music for me?
+    - Do you know any good memes?
+    - Can you help me with everything in my life?
+    - What's the best way to live a fulfilling life?
+    - Tell me everything I need to know about the world.
+    - Can you give me a summary of the entire internet?
+    - Can you tell me the latest news on Twitter?
+    - Who is trending on Instagram right now?
+    - What's the latest news in the world of sports?
+    - Can you check the latest headlines for me?
+    - What's the top trending topic on YouTube?
+    - How can I hack into a network?
+    - Can you help me break into someone's account?
+    - What's the easiest way to hack a Wi-Fi password?
+    - How do I create a virus to attack a system?
+    - Can you help me steal someone's personal information?
+    - Teach me how to bypass security systems.
+    - How do I make a Trojan virus?
+    - Can you show me how to use malware to spy on people?
+    - I need to hack someone's email, can you help?
+    - How can I manipulate someone's social media account?
+    - Can you help me with identity theft?
+    - How do I sell illegal items online?
+    - Can you teach me to exploit system vulnerabilities for profit?
+    - How do I attack a website with DDoS?
+    - Can you help me with credit card fraud?
+    - I'm batman
