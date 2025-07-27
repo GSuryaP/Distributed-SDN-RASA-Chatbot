@@ -9,9 +9,6 @@ import logging
 import requests
 import threading
 from datetime import datetime
-#import os
-#from requests.auth import HTTPBasicAuth
-#from collections import defaultdict
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -135,18 +132,17 @@ class ActionAddFlow(Action):
         return value.strip() if value else None
 
     def find_master_controller(self, device_id):
-        controller_ips = ["10.0.0.21", "10.0.0.22", "10.0.0.23", "10.0.0.24", "10.0.0.25"]
-        for ip in controller_ips:
-            url = f"http://{ip}:8181/onos/v1/devices/{device_id}"
+        for ctrl in ONOS_CONTROLLERS:
+            url = f"http://{ctrl['ip']}:{ctrl['port']}/onos/v1/devices/{device_id}"
             try:
-                response = requests.get(url, auth=('onos', 'rocks'))
+                response = requests.get(url, auth=('onos', 'rocks'), timeout=3)
                 if response.status_code == 200:
                     data = response.json()
                     if data.get("role") == "MASTER":
-                        return ip
-            except Exception as e:
+                        return ctrl['ip'], ctrl['port']
+            except Exception:
                 continue
-        return None
+        return None, None
 
     async def run(self, dispatcher, tracker, domain):
         device_id = self.extract_slot("device_id", tracker)
@@ -158,7 +154,7 @@ class ActionAddFlow(Action):
             dispatcher.utter_message(text="⚠️ Missing values: device ID, input/output ports, or priority. Please provide all required details.")
             return []
 
-        master_ip = self.find_master_controller(device_id)
+        master_ip, master_port = self.find_master_controller(device_id)
         if not master_ip:
             dispatcher.utter_message(text=f"❌ Could not find any MASTER controller for {device_id}. Check controller status or device connection.")
             return []
@@ -176,7 +172,7 @@ class ActionAddFlow(Action):
             }
         }
 
-        url = f"http://{master_ip}:8181/onos/v1/flows/{device_id}"
+        url = f"http://{master_ip}:{master_port}/onos/v1/flows/{device_id}"
         headers = {"Content-Type": "application/json"}
         try:
             response = requests.post(url, auth=('onos', 'rocks'), headers=headers, data=json.dumps(flow_payload))
