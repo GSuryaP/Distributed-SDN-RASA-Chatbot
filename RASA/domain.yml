@@ -17,8 +17,9 @@ intents:
   - get_ports
   - get_flows
   - show_topology
-  - find_path
   - nlu_fallback
+  - find_path
+  - bad_context
 
 entities:
   - device_id
@@ -29,6 +30,7 @@ entities:
   - flow_id
   - source_host
   - destination_host
+
 
 slots:
   device_id:
@@ -54,7 +56,7 @@ slots:
     mappings:
       - type: from_entity
         entity: priority
-
+        
   host_id:
     type: text
     mappings:
@@ -81,13 +83,13 @@ slots:
 
 responses:
   utter_greet:
-  - text: "Hello! I'm your ONOS network assistant. I can help you manage devices, flows, hosts, and monitor your network topology."
+  - text: "Hello! I'm your ONOS network management assistant. I can help you manage devices, flows, hosts, and monitor your network topology."
 
   utter_goodbye:
-  - text: "Goodbye! Have a great day managing your network!"
+  - text: "Goodbye! Have a great day!"
 
   utter_happy:
-  - text: "Great to hear you're feeling good! How can I help you with your network today?"
+  - text: "Glad to hear that! How can I help you with your network today?"
 
   utter_unhappy:
   - text: "I'm sorry to hear that. Let me help you with your network management tasks."
@@ -96,10 +98,11 @@ responses:
   - text: "I'm not sure I understand. Could you please rephrase your request?"
 
   utter_default:
-  - text: "I'm here to help you manage your ONOS network. Try saying: 'show devices' or 'add flow'."
+  - text: "Sorry, I can only assist with managing the ONOS network. How can I help you with that?"
   
   utter_controller_status_help:
   - text: "You can check the status of your controllers by typing something like 'controller status'."
+
 
 actions:
   - action_get_devices
@@ -112,8 +115,9 @@ actions:
   - action_get_ports
   - action_get_flows
   - action_show_topology
-  - action_find_path
   - action_default_fallback
+  - action_find_path
+  
 
 session_config:
   session_expiration_time: 60
