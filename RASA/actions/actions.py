@@ -320,9 +320,8 @@ class ActionBlockHost(Action):
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
 
         host_id = tracker.get_slot("host_id")
-
         if not host_id:
-            dispatcher.utter_message(text="⚠️ Please provide a valid host MAC address.")
+            dispatcher.utter_message(text="⚠️ Please provide a valid host IP address.")
             return []
 
         for controller in ONOS_CONTROLLERS:
@@ -330,67 +329,60 @@ class ActionBlockHost(Action):
             port = controller["port"]
             base_url = f"http://{ip}:{port}/onos/v1"
             auth = ("onos", "rocks")
-            master_found = False
 
             try:
-                # 1. Get ONOS cluster nodes
-                response = requests.get(f"{base_url}/cluster/nodes", auth=auth, timeout=2)
-                if response.status_code == 200:
-                    nodes = response.json()
-                    for node in nodes:
-                        # Match using controller port in the node ID
-                        if str(port) in node.get("id", "") and node.get("role") == "MASTER":
-                            master_found = True
-                            break
-
-                if not master_found:
-                    continue
-
-                # 2. Get host info
-                host_response = requests.get(f"{base_url}/network/hosts", auth=auth, timeout=2)
+                # 1. Get list of hosts
+                host_response = requests.get(f"{base_url}/hosts", auth=auth, timeout=2)
                 if host_response.status_code != 200:
                     continue
 
-                hosts = host_response.json()
-                matched_host = next((h for h in hosts if h["mac"] == host_id), None)
+                hosts = host_response.json().get("hosts", [])
+                matched_host = next((h for h in hosts if host_id in h.get("ipAddresses", [])), None)
 
                 if not matched_host:
-                    dispatcher.utter_message(text=f"❌ Host {host_id} not found.")
-                    return []
+                    continue
 
                 location = matched_host["locations"][0]
                 device_id = location["elementId"]
-                port_num = location["port"]
 
+                # 2. Build the drop flow using IPV4_SRC match and no treatment
                 flow_rule = {
-                    "priority": 40000,
+                    "priority": 45000,
                     "timeout": 0,
                     "isPermanent": True,
                     "deviceId": device_id,
-                    "treatment": {},
+                    "treatment": {
+                        "instructions": []  # No instructions => drop
+                    },
                     "selector": {
                         "criteria": [
                             {
-                                "type": "ETH_DST",
-                                "mac": host_id
+                                "type": "ETH_TYPE",
+                                "ethType": "0x0800"
+                            },
+                            {
+                                "type": "IPV4_SRC",
+                                "ip": f"{host_id}/32"
                             }
                         ]
                     }
                 }
 
-                # 3. Push flow to block host
+                # 3. Push the flow
                 flow_url = f"{base_url}/flows/{device_id}"
-                flow_response = requests.post(flow_url, json=flow_rule, auth=auth, timeout=2)
+                response = requests.post(flow_url, json=flow_rule, auth=auth, timeout=3)
 
-                if flow_response.status_code in [200, 201, 204]:
-                    dispatcher.utter_message(text=f"🚫 Host {host_id} has been blocked on {device_id}.")
+                if response.status_code in [200, 201, 204]:
+                    dispatcher.utter_message(text=f"🚫 Traffic from host {host_id} has been blocked on {device_id}.")
                     return []
+                else:
+                    print(f"[WARN] Flow install failed on {ip}:{port} — status {response.status_code}")
 
             except Exception as e:
-                print(f"[ERROR] Failed for controller {ip}:{port} - {e}")
+                print(f"[ERROR] Controller {ip}:{port} failed: {e}")
                 continue
 
-        dispatcher.utter_message(text=f"❌ Failed to block host {host_id}. All controllers unreachable or not master for this device.")
+        dispatcher.utter_message(text=f"❌ Failed to block host {host_id}. Could not reach any controller.")
         return []
 
 
@@ -400,19 +392,54 @@ class ActionUnblockHost(Action):
         return "action_unblock_host"
 
     def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[str, Any]) -> List[EventType]:
-        host_id = tracker.get_slot("host_id")
-        if not host_id:
-            dispatcher.utter_message(text="⚠️ Please specify a host ID to unblock (e.g., 'unblock host AA:BB:CC:DD:EE:FF')")
+        raw_host = tracker.get_slot("host_id")
+        if not raw_host:
+            dispatcher.utter_message(text="⚠️ Please specify a host IP or MAC to unblock.")
             return []
-        
-        logger.info(f"Unblocking host: {host_id}")
-        result = send_to_healthy_controller(f"/onos/v1/acl/allow/{host_id}", method="post")
-        
-        if "error" in result:
-            dispatcher.utter_message(text=f"❌ Failed to unblock host {host_id}. {result.get('error', '')}")
-        else:
-            dispatcher.utter_message(text=f"✅ Host {host_id} has been unblocked successfully.")
-        
+
+        # Normalize IP or MAC
+        if ":" in raw_host:  # assume MAC
+            normalized = raw_host.lower()
+            match_field = "mac"
+            match_type = "ETH_DST"
+        else:  # assume IP
+            normalized = raw_host if "/" in raw_host else raw_host + "/32"
+            match_field = "ip"
+            match_type = "IPV4_SRC"
+
+        logger.info(f"[Unblock] Looking for {match_type} = {normalized}")
+
+        found = False
+
+        for ctrl in ONOS_CONTROLLERS:
+            try:
+                url = f"http://{ctrl['ip']}:{ctrl['port']}/onos/v1/flows"
+                resp = requests.get(url, auth=AUTH, timeout=3)
+                if resp.status_code != 200:
+                    continue
+
+                flows = resp.json().get("flows", [])
+                for flow in flows:
+                    device_id = flow["deviceId"]
+                    flow_id = flow["id"]
+                    criteria = flow.get("selector", {}).get("criteria", [])
+
+                    for criterion in criteria:
+                        if criterion.get("type") == match_type and normalized in criterion.get(match_field, ""):
+                            # Match found — delete it
+                            del_url = f"http://{ctrl['ip']}:{ctrl['port']}/onos/v1/flows/{device_id}/{flow_id}"
+                            del_resp = requests.delete(del_url, auth=AUTH, timeout=3)
+                            if del_resp.status_code in [200, 204]:
+                                dispatcher.utter_message(text=f"✅ Unblocked host `{raw_host}` by deleting flow `{flow_id}` on {device_id}.")
+                                logger.info(f"[Unblock] Deleted flow {flow_id} from {device_id}")
+                                return []
+                            else:
+                                logger.warning(f"[Unblock] Failed to delete flow {flow_id} from {device_id}")
+            except Exception as e:
+                logger.error(f"[ERROR] Could not contact controller {ctrl['ip']}:{ctrl['port']} - {e}")
+                continue
+
+        dispatcher.utter_message(text=f"❌ No matching flow found to unblock host `{raw_host}`.")
         return []
 
 
