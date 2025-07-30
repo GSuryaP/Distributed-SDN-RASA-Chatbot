@@ -20,6 +20,10 @@ intents:
   - nlu_fallback
   - find_path
   - bad_context
+  - show_port_stats
+  - show_flow_stats
+  - export_metrics
+  - export_flow_metrics
 
 entities:
   - device_id
@@ -117,7 +121,10 @@ actions:
   - action_show_topology
   - action_default_fallback
   - action_find_path
-  
+  - action_show_port_stats
+  - action_show_flow_stats
+  - action_export_metrics
+  - action_export_flow_metrics
 
 session_config:
   session_expiration_time: 60
