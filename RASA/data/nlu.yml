@@ -303,5 +303,32 @@ nlu:
     - How do I sell illegal items online?
     - Can you teach me to exploit system vulnerabilities for profit?
     - How do I attack a website with DDoS?
+    - Hail Hitler!
     - Can you help me with credit card fraud?
     - I'm batman
+
+- intent: show_port_stats
+  examples: |
+    - show port stats
+    - get port statistics
+    - what is the current port status
+
+- intent: show_flow_stats
+  examples: |
+    - show flow stats
+    - get current flows count
+    - how many flows are active
+
+- intent: export_metrics
+  examples: |
+    - export port data
+    - push stats to grafana
+    - send port metrics to dashboard
+
+- intent: export_flow_metrics
+  examples: |
+    - export flow stats
+    - push flow metrics
+    - send flow counts to grafana
+    - export flows to dashboard
+    
